@@ -2,17 +2,14 @@ let kue = require('kue');
 let queue = kue.createQueue();
 let sleep = require('sleep');
 
-queue.process('download', (job, done) => {
+queue.process('convertFeed', (job, done) => {
   console.log(`Working on job ${job.id}`);
-  console.log(job.data);
-  downloadFile(job.data.file, done);
+  convertFeed(job, done);
 });
 
-const downloadFile = (file, done) => {
-  sleep.sleep(5);
-
-  console.log(`Downloading file: ${file}`);
-  sleep.sleep(5);
-  console.log('Download complete.');
+const convertFeed = (job, done) => {
+  console.log(`Converting job: ${job.id}`);
+  sleep.sleep(Math.ceil(Math.random() * 10));
+  console.log('Job complete.');
   done();
 };

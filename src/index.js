@@ -11,6 +11,6 @@ ui(app, '/kue/', '/api/')
 app.use('/api', kue.app);
 
 // Listen on port 5000
-app.listen(5000);
-
-console.log('Listening on port 5000');
+app.listen(5000, () => {
+  console.log('Kue UI is now running on http://localhost:5000');
+});

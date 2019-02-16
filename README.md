@@ -24,3 +24,7 @@ $ node ./src/index.js
 # Queue up some jobs
 $ node ./src/client.js
 ```
+
+## TODO
+- [ ] Implement data store
+- [ ] Hook up job queuer to data store
