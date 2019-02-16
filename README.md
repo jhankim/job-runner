@@ -1,15 +1,15 @@
 # job-runner
 Practice Node.js application for running jobs via Kue
 
-# Packages
+## Packages
 * [express](https://github.com/expressjs/express)
 * [kue](https://github.com/Automattic/kue/)
 * [kue-ui-epxress](https://github.com/stonecircle/kue-ui-express)
 
-# Requirements
+## Requirements
 * [Redis](https://redis.io)
 
-# Usage
+## Usage
 
 ```bash
 # Install packages
