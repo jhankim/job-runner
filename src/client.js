@@ -10,4 +10,7 @@ queue.on('job enqueue', () => {
 
 let job = queue.create('download', {
   file: 'sample/path/to/file', // config for `download` job type
-}).save();
+})
+  .attempts(3) // if fail, retry 3 times
+  .backoff({ delay: 60 * 1000 }) // wait 60s before retry
+  .save();
