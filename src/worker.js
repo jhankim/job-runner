@@ -9,7 +9,7 @@ queue.process('convertFeed', (job, done) => {
 
 const convertFeed = (job, done) => {
   console.log(`Converting job: ${job.id}`);
-  sleep.sleep(Math.ceil(Math.random() * 10));
+  // sleep.sleep(Math.ceil(Math.random() * 10));
   console.log('Job complete.');
   done();
 };
