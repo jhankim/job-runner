@@ -1,8 +1,7 @@
-let kue = require('kue');
-let queue = kue.createQueue();
+const kue = require('kue');
+const queue = kue.createQueue();
 const parse = require('csv-parse');
 const fs = require('fs');
-const XMLWriter = require('xml-writer');
 
 queue.process('convertFeed', (job, done) => {
   console.log(`Working on job ${job.id}`);
@@ -15,12 +14,13 @@ const convertFeed = (job, done) => {
   let readStream = fs.createReadStream(job.data.input.location.path);
   let writeStream = fs.createWriteStream(`${__dirname}/output.xml`);
 
-  xw = new XMLWriter;
-  xw.startDocument();
-  xw.startElement('root');
-  xw.writeAttribute('foo', 'value');
-  xw.text('Some content');
-  xw.endDocument();
+  var elem = xml.element({ _attr: { decade: '80s', locale: 'US' } });
+  var stream = xml({ toys: elem }, { stream: true });
+  stream.on('data', function (chunk) { console.log("data:", chunk) });
+  elem.push({ toy: 'Transformers' });
+  elem.push({ toy: 'GI Joe' });
+  elem.push({ toy: [{ name: 'He-man' }] });
+  elem.close();
 
   var parser = parse({
     columns: true // map CSV header as keys 

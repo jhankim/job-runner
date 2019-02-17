@@ -14,8 +14,15 @@ const dummyJobs = [
     },
     input: {
       location: {
-        type: 'URL',
+        type: 'PUBLIC_URL',
         path: 'https://sample.csv'
+      },
+      location: {
+        type: 'OLAPIC_FTP',
+        path: '/asdasd',
+        host: 123,
+        user: 123,
+        pw: 123,
       },
       type: 'CSV'
     },
