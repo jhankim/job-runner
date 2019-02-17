@@ -1,12 +1,15 @@
 module.exports = function (sequelize, DataTypes) {
   return sequelize.define('transport', {
     id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-    type: DataTypes.ENUM('OLAPIC_FTP', 'FTP', 'SFTP', 'HTTP'),
-    input: DataTypes.TEXT('long'),
-    output: DataTypes.TEXT('long'),
     jobId: { type: DataTypes.INTEGER, field: 'job_id' },
-    password: DataTypes.STRING,
+    type: DataTypes.ENUM('OLAPIC_FTP', 'FTP', 'SFTP', 'HTTP'),
+    path: DataTypes.STRING,
+    ftpHost: { type: DataTypes.STRING, field: 'ftp_host' },
+    ftpUser: { type: DataTypes.STRING, field: 'ftp_user' },
+    ftpPw: { type: DataTypes.STRING, field: 'ftp_pw' },
   }, {
       timestamps: false,
       tableName: 'job_transport',
-    });
+    }
+  )
+};

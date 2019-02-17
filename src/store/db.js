@@ -11,10 +11,10 @@ const sequelize = new Sequelize(
     port: 3306,
   });
 
-const Job = sequelize.import('../models/job');
-const Run = sequelize.import('../models/run');
-const Schedule = sequelize.import('../models/schedule');
-const Transport = sequelize.import('../models/transport');
+const Job = sequelize.import('./models/job');
+const JobHistory = sequelize.import('./models/job_history');
+const JobSchedule = sequelize.import('./models/job_schedule');
+const JobTransport = sequelize.import('./models/job_transport');
 
 const options = {
   foreignkey: 'job_id',
@@ -23,90 +23,38 @@ const options = {
   hooks: true,
 };
 
-Job.hasMany(Run, options);
-Run.belongsTo(Job, { foreignkey: 'job_id' });
+// Table relations
+Job.hasMany(JobHistory, options);
+JobHistory.belongsTo(Job, { foreignkey: 'job_id' });
 
-Job.hasOne(Schedule, options);
-Schedule.belongsTo(Job, { foreignkey: 'job_id' });
+Job.hasOne(JobSchedule, options);
+JobSchedule.belongsTo(Job, { foreignkey: 'job_id' });
 
-Job.hasOne(Transport, options);
-Transport.belongsTo(Job, { foreignkey: 'job_id' });
+Job.hasOne(JobTransport, options);
+JobTransport.belongsTo(Job, { foreignkey: 'job_id' });
 
 Job.addScope('generic', {
-  include: [{
-    model: Schedule,
-    attributes: ['enabled', 'frequency', 'next_run'],
-    required: false,
-  }, {
-    model: Run,
-    separate: true,
-    limit: 1,
-    order: [['id', 'DESC']],
-    required: 'false',
-  }, {
-    model: Transport,
-    attributes: ['type'],
-  }],
-});
-
-Job.addScope('detail', {
-  attributes: ['id', 'name', 'mapping', 'status'],
-  include: [{
-    model: Schedule,
-    attributes: ['enabled', 'start_date', 'frequency'],
-    required: false,
-  }, {
-    model: Run,
-    separate: true,
-    limit: 1,
-    order: [['id', 'DESC']],
-    required: 'false',
-  }, {
-    model: Transport,
-    attributes: ['input', 'output', 'type'],
-  }],
-});
-
-Job.addScope('withTransport', {
-  attributes: ['id', 'name', 'mapping', 'status'],
-  include: [{
-    model: Schedule,
-    attributes: ['user_id'],
-    required: false,
-  }, {
-    model: Transport,
-    attributes: ['input', 'output', 'type', 'password'],
-  }],
-});
-
-Job.addScope('status', {
-  attributes: ['id', 'status'],
-  include: [{
-    model: Schedule,
-    attributes: ['enabled', 'next_run'],
-    required: false,
-  }, {
-    model: Run,
-    separate: true,
-    limit: 1,
-    order: [['id', 'DESC']],
-    required: 'false',
-  }],
-});
-
-Job.addScope('withinAnHour', function (endDate) {
-  return {
-    include: [{
-      model: Schedule,
-      where: {
-        nextRun: {
-          $lte: endDate,
-        },
-        enabled: true,
-      },
+  include: [
+    {
+      model: JobSchedule,
+      required: false,
+      attributes: ['enabled', 'start_at', 'interval', 'unit'],
+    },
+    {
+      model: JobHistory,
+      required: false,
+      separate: true,
+      order: [['created_date', 'DESC']],
+    },
+    {
+      model: JobTransport,
+      attributes: ['type'],
     }],
-  };
 });
+
+const createJob = (jobData) => {
+  return Job.create(jobData)
+}
 
 const setRunAsComplete = (run) => () => {
   return sequelize.transaction(function (t) {
@@ -131,61 +79,6 @@ const setRunAsComplete = (run) => () => {
   });
 };
 
-const updateJob = (jobId, customerId, job, updatePassword) => {
-  return Job.update(job, {
-    where: {
-      customerId,
-      id: jobId,
-    },
-  }).then(() => {
-    return Schedule.update(job.schedule, {
-      where: {
-        job_id: jobId,
-      },
-    }).then(() => {
-      let fields = ['type', 'input', 'output'];
-      if (updatePassword) fields.push('password');
-      return Transport.update(job.transport, {
-        fields,
-        where: {
-          job_id: jobId,
-        },
-      });
-    });
-  });
-};
-
-const pauseJob = (jobId, customerId) => {
-  return Job.scope('detail').findOne({
-    where: {
-      id: jobId,
-      customerId,
-    },
-  }).then(function (job) {
-    return job.getSchedule().then((schedule) => {
-      schedule.enabled = false;
-      return schedule.save();
-    });
-  });
-};
-
-const resumeJob = (jobId, customerId) => {
-  return Job.scope('detail').findOne({
-    where: {
-      id: jobId,
-      customerId,
-    },
-  }).then(function (job) {
-    return job.getSchedule().then((schedule) => {
-      let nextRun = new Date();
-      nextRun.setHours(nextRun.getHours() + parseInt(schedule.frequency));
-      schedule.nextRun = util.mysqlTime(nextRun),
-        schedule.enabled = true;
-      return schedule.save();
-    });
-  });
-};
-
 const setRunAsError = (run) => {
   return run.update({
     status: 'ERROR',
@@ -194,12 +87,8 @@ const setRunAsError = (run) => {
 
 module.exports = {
   Job,
-  Run,
-  Schedule,
-  Transport,
-  setRunAsComplete,
-  setRunAsError,
-  pauseJob,
-  resumeJob,
-  updateJob,
+  JobHistory,
+  JobSchedule,
+  JobTransport,
+  createJob,
 };
