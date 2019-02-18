@@ -35,3 +35,4 @@ $ npm run start:dev:api
 - [x] Implement sample data endpoint
 - [ ] Enable XML sample data endpoint
 - [ ] Implement mapping and job worker
+- [ ] Beef up validation on createJob
