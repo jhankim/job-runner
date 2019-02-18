@@ -11,19 +11,23 @@ const { runScheduleJobs } = require('./workers/convertFeedQueuer');
 
 // Routes
 const jobsRouter = require('./routes/jobsRouter');
+const sampleFileRouter = require('./routes/sampleFileRouter');
 
 // Use bodyParser and expressValidator
-app.use(bodyParser.json()).use(expressValidator());
+app.use(bodyParser.json());
+app.use(expressValidator());
 
 // Configure & mount Kue UI
 kueUI(app, '/kue/', '/api/kue');
 
 // Mount routes
-app.use('/api/kue', kue.app).use('/api', jobsRouter);
+app.use('/api/kue', kue.app);
+app.use('/api', jobsRouter);
+app.use('/api', sampleFileRouter);
 
 // Listen on port 5000
 app.listen(5000, () => {
   console.log('Kue UI is now running on http://localhost:5000');
 });
 
-runScheduleJobs();
+// runScheduleJobs();

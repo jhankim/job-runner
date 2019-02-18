@@ -17,26 +17,26 @@ const analyzeFeed = (job, done) => {
   let writeStream = fs.createWriteStream(`${__dirname}/output.xml`);
 
   // Used for unpiping stream and marking job as done once we reach the max record count
-  const doneParsing = function () {
+  const doneParsing = function() {
     readStream.unpipe(parser);
     done();
-  }
+  };
   let count = 0;
   const max = 5;
 
   var parser = parse({
-    columns: true // map CSV header as keys 
+    columns: true, // map CSV header as keys
   })
-    .on('readable', function () {
+    .on('readable', function() {
       let record;
-      while (record = parser.read() && count < max) {
+      while ((record = parser.read() && count < max)) {
         output.push(parser.read());
         ++count;
       }
 
       doneParsing();
     })
-    .on('unpipe', function () {
+    .on('unpipe', function() {
       console.log('Job complete.');
     });
 

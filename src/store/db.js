@@ -1,15 +1,12 @@
 const Sequelize = require('sequelize');
 
 const mysqlHost = process.env.MYSQL_HOST || '127.0.0.1';
-const sequelize = new Sequelize(
-  process.env.MYSQL_DATABASE,
-  process.env.MYSQL_USER,
-  process.env.MYSQL_PASSWORD,
-  {
-    host: mysqlHost,
-    dialect: 'mysql',
-    port: 3306,
-  });
+const sequelize = new Sequelize(process.env.MYSQL_DATABASE, process.env.MYSQL_USER, process.env.MYSQL_PASSWORD, {
+  host: mysqlHost,
+  dialect: 'mysql',
+  port: 3306,
+  timezone: process.env.TZ,
+});
 
 const Job = sequelize.import('./models/job');
 const JobSchedule = sequelize.import('./models/job_schedule');
