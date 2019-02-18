@@ -1,5 +1,6 @@
 const { param, body } = require('express-validator/check');
 const bodyParser = require('body-parser');
+const moment = require('moment');
 
 const { Job, JobSchedule, JobHistory } = require('../store/db');
 const { scheduleJob } = require('../workers/convertFeedQueuer');
@@ -67,12 +68,6 @@ const createJob = (req, res) => {
         lastUpdateBy: req.body.createdBy,
         dateCreated: Date.now(),
         dateUpdated: Date.now(),
-        schedule: {
-          enabled: true,
-          startAt: Date.now(),
-          interval: 5,
-          unit: 'hours',
-        },
       };
 
       // Create a job config
@@ -153,6 +148,7 @@ const validate = method => {
   switch (method) {
     case 'createJob': {
       return [
+        // Base job object validation
         body('name', 'Job name missing').exists({ checkFalsy: true }),
         body('description').optional(),
         body('customerId', 'Job customerId missing').exists(),
@@ -160,13 +156,23 @@ const validate = method => {
         body('createdBy', 'Job createdBy missing').exists(),
         body('createdBy', 'Invalid email').isEmail(),
         body('alertEmails').optional(),
+
+        // schedule object properties validation
+        body('schedule', 'Missing object. `schedule` is missing.').exists(),
+        body('schedule.enabled', '`schedule.enabled` is missing.').exists(),
+        body('schedule.startAt', '`schedule.startAt` is missing.').exists(),
+        body('schedule.interval', '`schedule.interval` is missing.').exists(),
+        body('schedule.unit', '`schedule.unit` is missing.').exists(),
+
+        // schedule object properties type validation
+        body('schedule.enabled', '`schedule.enabled` must be boolean').isBoolean(),
+        body('schedule.startAt', '`schedule.startAt` must be valid date string').custom(value => moment(value).isValid()),
+        body('schedule.interval', '`schedule.interval` must be integer').isInt(),
+        body('schedule.unit', '`schedule.unit` must be `minutes` or `hours`').isIn('minutes', 'hours'),
       ];
     }
     case 'runJob': {
-      return [
-        param('id', 'Job id not provided').exists(),
-        param('id', 'Job ID must be integer').isInt(),
-      ];
+      return [param('id', 'Job id not provided').exists(), param('id', 'Job ID must be integer').isInt()];
     }
   }
 };
@@ -180,9 +186,9 @@ const validationHandler = next => result => {
   // Return if there are no validation errors
   if (result.isEmpty()) return;
   if (!next) {
-    return Promise.reject(result.array());
+    return Promise.reject(result.array().map(item => item.msg));
   } else {
-    return next(result.array());
+    return next(result.array().map(item => item.msg));
   }
 };
 
