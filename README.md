@@ -26,5 +26,10 @@ $ node ./src/client.js
 ```
 
 ## TODO
-- [ ] Implement data store
-- [ ] Hook up job queuer to data store
+- [x] Implement data store
+- [x] Hook up job queuer to data store
+- [x] Implement run endpoint
+- [] Implement job list and job details endpoint
+- [ ] Request validation
+- [ ] Implement sample data endpoint
+- [ ] Implement mapping and job worker

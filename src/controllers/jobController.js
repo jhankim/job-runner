@@ -1,17 +1,21 @@
 const store = require('../store/db');
 const bodyParser = require('body-parser');
+const { scheduleJob } = require('../workers/convertFeedQueuer');
 
 const createJob = (req, res) => {
 
   // Define job object from req
   const job = {
+    ...req.body,
+    lastUpdateBy: req.body.createdBy,
+    dateCreated: Date.now(),
+    dateUpdated: Date.now(),
     schedule: {
       enabled: true,
       startAt: Date.now(),
       interval: 5,
       unit: "hours"
     },
-    ...req.body
   };
 
   // Create a job config
@@ -26,7 +30,7 @@ const createJob = (req, res) => {
       res.json({ success: true, job });
     })
     .catch((error) => {
-      console.log(error);
+      res.json({ success: false, error });
     });
   // const job = createJobObj(req.body, req.params.customerId, res.locals.userId);
 
@@ -42,6 +46,36 @@ const createJob = (req, res) => {
   // res.send({ code: 200, data: { message: 'Successfully created' } })
 };
 
+const runJob = (req, res) => {
+  const jobId = req.body.id;
+
+  // Find the job to run
+  store.Job.findOne({
+    where: {
+      id: jobId
+    }
+  })
+    .then(job => {
+      // Check if job matching the provided jobId is found
+      if (job) {
+        // Schedule the job using the job data
+        scheduleJob(job)
+          .then(() => {
+            // If job was successfully scheduled, send back message
+            res.json({ message: `Running Job ID ${jobId}` });
+          })
+          .catch((error) => {
+            // If job was not scheduled, send back response with the error message
+            res.status(403).send({ message: error });
+          });
+
+      } else {
+        res.status(404).send({ message: `Job ID ${jobId} not found...` });
+      }
+    });
+}
+
 module.exports = {
-  createJob
+  createJob,
+  runJob
 }

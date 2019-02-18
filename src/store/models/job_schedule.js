@@ -4,7 +4,7 @@ module.exports = function (sequelize, DataTypes) {
     jobId: { type: DataTypes.INTEGER, field: 'job_id' },
     enabled: DataTypes.BOOLEAN,
     startAt: { type: DataTypes.DATE, field: 'start_at' },
-    interval: DataTypes.BOOLEAN,
+    interval: DataTypes.INTEGER,
     unit: DataTypes.ENUM('MINUTES', 'HOURS')
   }, {
       timestamps: false,

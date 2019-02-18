@@ -5,10 +5,11 @@ let express = require('express');
 let ui = require('kue-ui-express');
 let app = express();
 let bodyParser = require('body-parser');
+const { runScheduleJobs } = require('./workers/convertFeedQueuer');
 
 app.use(bodyParser.json());
 
-let jobsController = require('./controllers/jobs');
+let jobsController = require('./controllers/jobController');
 
 // Configure & mount Kue UI
 ui(app, '/kue/', '/api/')
@@ -16,9 +17,15 @@ ui(app, '/kue/', '/api/')
 // Mount Kue JSON API
 app.use('/api', kue.app);
 
+// Jobs
+// app.get('/jobs', jobsController)
 app.post('/jobs/create', jobsController.createJob);
+app.post('/jobs/run', jobsController.runJob);
 
 // Listen on port 5000
 app.listen(5000, () => {
   console.log('Kue UI is now running on http://localhost:5000');
 });
+
+
+runScheduleJobs();

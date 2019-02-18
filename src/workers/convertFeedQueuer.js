@@ -1,49 +1,131 @@
-let kue = require('kue');
-let queue = kue.createQueue();
-let moment = require('moment');
+require('dotenv').config();
 
-const dummyJobs = [{
-  id: 1,
-  input: {
-    type: 'CSV',
-    location: {
-      type: 'URL',
-      path: '/Users/jaehankim/OLAPIC/PFC/test-sales-records-500k.csv'
-    },
-  },
-  mapping: {
-    orderId: 'Order ID',
-    itemType: 'Item Type'
-  },
-}];
+const kue = require('kue');
+const queue = kue.createQueue();
+const moment = require('moment');
+const { Job, JobSchedule, JobHistory } = require('../store/db');
 
-queue.on('job enqueue', function (id, type) {
-  console.log('Job %s got queued of type %s', id, type);
-  process.exit();
-})
+/**
+ * Run the scheduler, should be run as a separate work process
+ */
+const runScheduleJobs = () => {
+  // Get all jobs and execute.
+  const jobs = Job.findAll({ include: [JobSchedule] });
+  jobs.then((jobs) => scheduleJobs(jobs));
 
-// queuer.js - run as background process - run every X seconds
+  // Run every 5 seconds
+  setInterval(() => {
+    // Execute scheduleJobs
+    jobs.then((jobs) => scheduleJobs(jobs));
+  }, 5000);
+}
+
+/**
+ * Schedules jobs
+ * 
+ * @param {array} jobs 
+ */
 const scheduleJobs = (jobs) => {
-  console.log('Looking for jobs to schedule');
-  // loop through all jobs
-  jobs.forEach(job => {
-    console.log(`Queuing up Job ID: ${job.id}`);
+  console.log(`${moment()} - Looking for jobs to schedule`);
 
-    // queue up the job into the queue list
-    return newJob = queue.create('convertFeed', {
-      ...job
-    })
-      .attempts(3) // if fail, retry 3 times
-      .backoff({ delay: 60 * 1000 }) // wait 60s before retry
-      .save();
+  // Loop through all jobs
+  jobs.forEach(async job => {
+    const jobData = { ...job.dataValues };
+    const jobScheduleData = { ...jobData.schedule.dataValues }
+
+    const { enabled, startAt, interval, unit } = jobScheduleData; // Get schedule info
+    const now = moment(); // Current time
+    const jobExecutionTime = moment(startAt).add(interval, unit); // Calculate job exec time
+    const lastJobRun = await findLastJobRun(jobData.id); // Get last job run
+    const shouldRun = moment(lastJobRun.dataValues.dateCreated) < moment().subtract(interval, unit);
+
+    // Make sure current time is greater than job execution time and job isn't running
+    if (enabled && now > jobExecutionTime && shouldRun && await isJobCurrentlyRunning(jobData.id) === false) {
+      console.log(`${moment()} - Job ID ${jobData.id} needs to run. Queuing it up!`);
+
+      // Queue up the job into the queue list
+      return queueJob(jobData);
+    }
+  });
+}
+
+/**
+ * Schedules a job
+ * @param {object} job
+ */
+const scheduleJob = async (job) => {
+  const jobData = job.dataValues
+
+  if (await isJobCurrentlyRunning(jobData.id) === false) {
+    return queueJob(jobData);
+  } else {
+    return Promise.reject(`Job ID ${jobData.id} is already running. Try again later.`);
+  }
+}
+
+/** Queue a job */
+const queueJob = (jobData) => {
+  const now = moment();
+  // Queue up the job into the queue list
+  return newJob = queue.create('convertFeed', {
+    ...jobData
   })
+    .attempts(3) // If fail, retry 3 times
+    .backoff({ delay: 60 * 1000 }) // Wait 60s before retry
+    // .ttl(60 * 5000) // TTL set as 10 minutes
+    .ttl(10000)
+    .save((err) => {
+      if (err) {
+        // Create a new job history with ERROR status and detailed message
+        JobHistory.create({
+          jobId: jobData.id,
+          queueId: newJob.id,
+          dateCreated: now,
+          dateUpdated: now,
+          status: 'ERROR',
+          message: err
+        })
+      } else {
+        // Create a new job history with RUNNING status
+        JobHistory.create({
+          jobId: jobData.id,
+          queueId: newJob.id,
+          dateCreated: now,
+          dateUpdated: now,
+          status: 'RUNNING',
+        })
+      }
+    })
 }
 
-const isJobCurrentlyRunning = (jobId) => {
-  const job = dummyJobs.find(job => job.id = jobId); // get job using id
-  const isJobRunning = job.status == 'RUNNING' ? true : false;
-
-  return isJobRunning;
+/**
+ * Return the last job run (history)
+ * @param {number} jobId 
+ */
+const findLastJobRun = async (jobId) => {
+  return JobHistory.findOne({
+    where: { jobId },
+    order: [['dateCreated', 'DESC']]
+  })
+    .then((lastJobRun) => {
+      return lastJobRun;
+    });
 }
 
-scheduleJobs(dummyJobs);
+/**
+ * Checks if there's a running job
+ * @param {number} jobId 
+ */
+const isJobCurrentlyRunning = async (jobId) => {
+  return JobHistory.findAll({ where: { jobId } }).then((history) => {
+    const runningJobs = history.filter((item) => item.status === 'RUNNING');
+    const isJobRunning = runningJobs.length ? true : false;
+
+    return isJobRunning;
+  });
+}
+
+module.exports = {
+  scheduleJob,
+  runScheduleJobs
+}
