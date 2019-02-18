@@ -1,32 +1,29 @@
 require('dotenv').config();
-let kue = require('kue');
-let queue = kue.createQueue();
-let express = require('express');
-let ui = require('kue-ui-express');
-let app = express();
-let bodyParser = require('body-parser');
+
+const kue = require('kue');
+const queue = kue.createQueue();
+const express = require('express');
+const bodyParser = require('body-parser');
+const expressValidator = require('express-validator');
+const kueUI = require('kue-ui-express');
+const app = express();
 const { runScheduleJobs } = require('./workers/convertFeedQueuer');
 
-app.use(bodyParser.json());
+// Routes
+const jobsRouter = require('./routes/jobsRouter');
 
-let jobsController = require('./controllers/jobController');
+// Use bodyParser and expressValidator
+app.use(bodyParser.json()).use(expressValidator());
 
 // Configure & mount Kue UI
-ui(app, '/kue/', '/api/')
+kueUI(app, '/kue/', '/api/kue');
 
-// Mount Kue JSON API
-app.use('/api', kue.app);
-
-// Route - Jobs
-app.get('/jobs', jobsController.getJobs);
-app.get('/jobs/:id', jobsController.getJob);
-app.post('/jobs/create', jobsController.createJob);
-app.post('/jobs/:id/run', jobsController.runJob);
+// Mount routes
+app.use('/api/kue', kue.app).use('/api', jobsRouter);
 
 // Listen on port 5000
 app.listen(5000, () => {
   console.log('Kue UI is now running on http://localhost:5000');
 });
-
 
 runScheduleJobs();

@@ -18,7 +18,7 @@ $ npm i
 # Run the worker process
 $ npm run start:dev:worker
 
-# Run API and UI at http://localhost:5000/kue/
+# Run API and UI at http://localhost:5000/kue/ 
 $ npm run start:dev:api
 ```
 
