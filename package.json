@@ -7,8 +7,10 @@
   "license": "MIT",
   "private": true,
   "scripts": {
-    "start:dev": "nodemon ./index.js",
-    "start": "node ./index.js"
+    "start:dev:worker": "nodemon ./src/workers/convertFeedWorker.js",
+    "start:dev:api": "nodemon ./src/index.js",
+    "start:worker": "node ./src/workers/convertFeedWorker.js",
+    "start": "node ./src/index.js"
   },
   "dependencies": {
     "babel-eslint": "^10.0.1",

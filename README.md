@@ -1,5 +1,5 @@
 # job-runner
-Practice Node.js application for running jobs via Kue
+Node.js application for running jobs via Kue
 
 ## Packages
 * [express](https://github.com/expressjs/express)
@@ -15,14 +15,11 @@ Practice Node.js application for running jobs via Kue
 # Install packages
 $ npm i
 
-# Run worker
-$ node ./src/worker.js
+# Run the worker process
+$ npm run start:dev:worker
 
-# Run UI at http://localhost:5000/kue/
-$ node ./src/index.js
-
-# Queue up some jobs
-$ node ./src/client.js
+# Run API and UI at http://localhost:5000/kue/
+$ npm run start:dev:api
 ```
 
 ## TODO
