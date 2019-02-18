@@ -17,10 +17,11 @@ ui(app, '/kue/', '/api/')
 // Mount Kue JSON API
 app.use('/api', kue.app);
 
-// Jobs
-// app.get('/jobs', jobsController)
+// Route - Jobs
+app.get('/jobs', jobsController.getJobs);
+app.get('/jobs/:id', jobsController.getJob);
 app.post('/jobs/create', jobsController.createJob);
-app.post('/jobs/run', jobsController.runJob);
+app.post('/jobs/:id/run', jobsController.runJob);
 
 // Listen on port 5000
 app.listen(5000, () => {

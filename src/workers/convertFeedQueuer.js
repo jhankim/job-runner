@@ -37,7 +37,7 @@ const scheduleJobs = (jobs) => {
     const now = moment(); // Current time
     const jobExecutionTime = moment(startAt).add(interval, unit); // Calculate job exec time
     const lastJobRun = await findLastJobRun(jobData.id); // Get last job run
-    const shouldRun = moment(lastJobRun.dataValues.dateCreated) < moment().subtract(interval, unit);
+    const shouldRun = lastJobRun && moment(lastJobRun.dataValues.dateCreated) < moment().subtract(interval, unit);
 
     // Make sure current time is greater than job execution time and job isn't running
     if (enabled && now > jobExecutionTime && shouldRun && await isJobCurrentlyRunning(jobData.id) === false) {

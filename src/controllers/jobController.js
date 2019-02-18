@@ -1,7 +1,68 @@
-const store = require('../store/db');
+const { Job, JobSchedule, JobHistory } = require('../store/db');
 const bodyParser = require('body-parser');
 const { scheduleJob } = require('../workers/convertFeedQueuer');
 
+/**
+ * Get a single job
+ * 
+ * @param {object} req 
+ * @param {object} res 
+ */
+const getJob = (req, res) => {
+  const jobId = req.params.id;
+
+  // Find the job using job Id
+  Job.findOne({
+    where: {
+      id: jobId
+    },
+    include: [
+      JobHistory,
+      JobSchedule
+    ],
+    order: [
+      [
+        JobHistory,
+        'dateCreated',
+        'DESC'
+      ]
+    ]
+  })
+    .then((job) => {
+      if (job) {
+        res.send({ data: job })
+      } else {
+        res.status(404).json({
+          message: `Couldn't find Job ID ${jobId}`
+        });
+      }
+    })
+    .catch(err => {
+      res.status(403).json({
+        message: 'Something went wrong :(',
+        data: err
+      });
+    })
+}
+
+/**
+ * Gets all jobs
+ * 
+ * @param {object} req 
+ * @param {object} res 
+ */
+const getJobs = (req, res) => {
+  Job.findAll().then((jobs) => {
+    res.send({ data: jobs })
+  })
+}
+
+/**
+ * Creates a job
+ * 
+ * @param {object} req 
+ * @param {object} res 
+ */
 const createJob = (req, res) => {
 
   // Define job object from req
@@ -19,18 +80,18 @@ const createJob = (req, res) => {
   };
 
   // Create a job config
-  store.Job.create(job, {
+  Job.create(job, {
     // Include the additional models
     include: [
-      { model: store.JobSchedule, as: 'schedule' },
-      { model: store.JobTransport, as: 'transport' }
+      { model: JobSchedule, as: 'schedule' }
+      // { model: store.JobTransport, as: 'transport' }
     ]
   })
     .then((job) => {
-      res.json({ success: true, job });
+      res.json({ data: job });
     })
     .catch((error) => {
-      res.json({ success: false, error });
+      res.status(403).json({ message: error });
     });
   // const job = createJobObj(req.body, req.params.customerId, res.locals.userId);
 
@@ -46,11 +107,17 @@ const createJob = (req, res) => {
   // res.send({ code: 200, data: { message: 'Successfully created' } })
 };
 
+/**
+ * Runs a job
+ * 
+ * @param {object} req 
+ * @param {object} res 
+ */
 const runJob = (req, res) => {
-  const jobId = req.body.id;
+  const jobId = req.params.id;
 
   // Find the job to run
-  store.Job.findOne({
+  Job.findOne({
     where: {
       id: jobId
     }
@@ -77,5 +144,7 @@ const runJob = (req, res) => {
 
 module.exports = {
   createJob,
-  runJob
+  runJob,
+  getJob,
+  getJobs
 }
