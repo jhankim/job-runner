@@ -10,13 +10,13 @@ const { Job, JobSchedule, JobHistory } = require('../store/db');
  */
 const runScheduleJobs = () => {
   // Get all jobs and execute.
-  const jobs = Job.findAll({ include: [JobSchedule] });
-  jobs.then(jobs => scheduleJobs(jobs));
+  Job.findAll({ include: [JobSchedule] }).then(jobs => scheduleJobs(jobs));
 
   // Run every 5 seconds
   setInterval(() => {
     // Execute scheduleJobs
-    jobs.then(jobs => scheduleJobs(jobs));
+
+    Job.findAll({ include: [JobSchedule] }).then(jobs => scheduleJobs(jobs));
   }, 5000);
 };
 
